@@ -1,29 +1,29 @@
-function labelSquares() {
-  const squares = document.querySelectorAll(".square");
-  let i = 0;
-  for (let y = 7; y >= 0; y--) {
-    for (let x = 0; x <= 7; x++) {
-      squares[i].textContent = `${x},${y}`;
-      i++;
-    }
-  }
-  return squares;
-}
-let squares = labelSquares();
-function colorSquares(squares, position, depth) {
-  squares.forEach((square) => {
-    if (position.toString() == square.textContent) {
-      if (depth == 0) square.style.backgroundColor = "black";
-      if (depth == 1) square.style.backgroundColor = "blue";
-      if (depth == 2) square.style.backgroundColor = "green";
-      if (depth == 3) square.style.backgroundColor = "red";
-      if (depth == 4) square.style.backgroundColor = "purple";
-      if (depth == 5) square.style.backgroundColor = "gray";
-      if (depth == 6) square.style.backgroundColor = "brown";
-      if (depth == 7) square.style.backgroundColor = "yellow";
-    }
-  });
-}
+// function labelSquares() {
+//   const squares = document.querySelectorAll(".square");
+//   let i = 0;
+//   for (let y = 7; y >= 0; y--) {
+//     for (let x = 0; x <= 7; x++) {
+//       squares[i].textContent = `${x},${y}`;
+//       i++;
+//     }
+//   }
+//   return squares;
+// }
+// let squares = labelSquares();
+// function colorSquares(squares, position, depth) {
+//   squares.forEach((square) => {
+//     if (position.toString() == square.textContent) {
+//       if (depth == 0) square.style.backgroundColor = "black";
+//       if (depth == 1) square.style.backgroundColor = "blue";
+//       if (depth == 2) square.style.backgroundColor = "green";
+//       if (depth == 3) square.style.backgroundColor = "red";
+//       if (depth == 4) square.style.backgroundColor = "purple";
+//       if (depth == 5) square.style.backgroundColor = "gray";
+//       if (depth == 6) square.style.backgroundColor = "brown";
+//       if (depth == 7) square.style.backgroundColor = "yellow";
+//     }
+//   });
+// }
 function checkPos(posSquares) {
   let nextSquares = [];
   posSquares.forEach(([x, y]) => {
@@ -42,8 +42,11 @@ for (let i = 0; i < 8; i++) {
   }
 }
 
+let depthArray = [];
+
 class Node {
   constructor(position, depth = 0) {
+    this.correct = false;
     this.position = position;
     this.depth = depth;
     this.path1 = null;
@@ -54,18 +57,30 @@ class Node {
     this.path6 = null;
     this.path7 = null;
     this.path8 = null;
-    colorSquares(squares, position, depth);
+    // colorSquares(squares, position, depth);
   }
 }
 
+let correctNode;
+
 class Tree {
-  constructor([x, y], depth = 0) {
+  constructor([x, y], end = [0, 0], depth = 0) {
     this.node = new Node([x, y], depth);
     this.depth = depth;
+    this.end = end;
+    this.correct = false;
   }
   buildTree([x, y]) {
-    if (board[x][y] === "X") return null;
-    board[x][y] = "X";
+    // if (board[x][y] === "X") return null;
+    // board[x][y] = "X";
+    let end = this.end;
+
+    if (this.depth != null && end[0] == x && end[1] == y) {
+      depthArray.push(this.depth);
+      return;
+    }
+
+    let depth = this.depth + 1;
 
     if (this.depth + 1 > 2) {
       return;
@@ -82,50 +97,52 @@ class Tree {
     ];
     let nextSquares = checkPos(possibleSquares);
 
-    let depth = this.depth + 1;
-    console.log(depth);
-
     let counter = 1;
     nextSquares.forEach(([x, y]) => {
-      if (counter == 1) {
-        this.node.path1 = new Tree([x, y], depth);
-        this.node.path1.depth = depth;
-        this.node.path1.buildTree([x, y]);
-      } else if (counter == 2) {
-        this.node.path2 = new Tree([x, y], depth);
-        this.node.path1.depth = depth;
-        this.node.path2.buildTree([x, y]);
-      } else if (counter == 3) {
-        this.node.path3 = new Tree([x, y], depth);
-        this.node.path1.depth = depth;
-        this.node.path3.buildTree([x, y]);
-      } else if (counter == 4) {
-        this.node.path4 = new Tree([x, y], depth);
-        this.node.path1.depth = depth;
-        this.node.path4.buildTree([x, y]);
-      } else if (counter == 5) {
-        this.node.path5 = new Tree([x, y], depth);
-        this.node.path1.depth = depth;
-        this.node.path5.buildTree([x, y]);
-      } else if (counter == 6) {
-        this.node.path6 = new Tree([x, y], depth);
-        this.node.path1.depth = depth;
-        this.node.path6.buildTree([x, y]);
-      } else if (counter == 7) {
-        this.node.path7 = new Tree([x, y], depth);
-        this.node.path1.depth = depth;
-        this.node.path7.buildTree([x, y]);
-      } else if (counter == 8) {
-        this.node.path8 = new Tree([x, y], depth);
-        this.node.path1.depth = depth;
-        this.node.path8.buildTree([x, y]);
-      }
+      this.node[`path${counter}`] = new Tree([x, y], end, depth);
+      this.node[`path${counter}`].depth = depth;
+      this.node[`path${counter}`].buildTree([x, y]);
       counter++;
+    });
+  }
+  find([a, b], depth) {
+    let children = [];
+    if (this.depth > depth) return;
+    for (let i = 1; i <= 8; i++) {
+      if (this.node[`path${i}`]) children.push(this.node[`path${i}`]);
+    }
+    children.forEach((child) => {
+      if (child.node.position[0] == a && child.node.position[1] == b) {
+        correctNode = child.node;
+        correctNode.correct = true;
+        console.log(correctNode);
+      } else {
+        child.find([a, b], depth);
+      }
+    });
+  }
+  drawPath(depth) {
+    let children = [];
+    if (this.depth > depth) return;
+    for (let i = 1; i <= 8; i++) {
+      if (this.node[`path${i}`]) children.push(this.node[`path${i}`]);
+    }
+    children.forEach((child) => {
+      if (true) {
+        console.log(this);
+      } else {
+        child.find([a, b], depth);
+      }
     });
   }
 }
 
 let pos = [1, 3];
-let tree = new Tree(pos);
+let end = [1, 5];
+let tree = new Tree(pos, end);
 tree.buildTree(pos);
 console.log(tree);
+let depth = Math.min.apply(Math, depthArray);
+console.log(tree.find(end, depth));
+console.log(tree.drawPath(end, depth));
+console.log("MIN STEPS: " + Math.min.apply(Math, depthArray));
